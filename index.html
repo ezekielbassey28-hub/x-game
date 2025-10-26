@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>X vs O - Tic Tac Toe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    function ArcadeXO() {
+      const [gameState, setGameState] = useState('menu');
+      const [board, setBoard] = useState(Array(9).fill(null));
+      const [isXNext, setIsXNext] = useState(true);
+      const [scores, setScores] = useState({ x: 0, o: 0 });
+      const [stats, setStats] = useState({ xWins: 0, oWins: 0, draws: 0, totalGames: 0 });
+      const [gameHistory, setGameHistory] = useState([]);
+      const [moveHistory, setMoveHistory] = useState([]);
+      const [playerNames, setPlayerNames] = useState({ x: 'X', o: 'O' });
+      const [nameInputs, setNameInputs] = useState({ x: '', o: '' });
+      const [difficulty, setDifficulty] = useState('pvp');
+      const [timeLimit, setTimeLimit] = useState(0);
+      const [timeLeft, setTimeLeft] = useState(0);
+      const [seriesMode, setSeriesMode] = useState('single');
+      const [seriesTarget, setSeriesTarget] = useState(3);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [showSettings, setShowSettings] = useState(false);
+      const [theme, setTheme] = useState('dark');
+      const [replayMode, setReplayMode] = useState(false);
+      const [replayIndex, setReplayIndex] = useState(0);
+      const [winStreak, setWinStreak] = useState({ x: 0, o: 0 });
+      const [gameMode, setGameMode] = useState('classic');
+      const [blitzTarget, setBlitzTarget] = useState(5);
+      const [achievements, setAchievements] = useState([]);
+      const [positionHeatmap, setPositionHeatmap] = useState(Array(9).fill(0));
+      const [leaderboard, setLeaderboard] = useState([]);
+      const [gameStartTime, setGameStartTime] = useState(null);
+      const timerRef = useRef(null);
+
+      const ACHIEVEMENTS = {
+        firstWin: { id: 'firstWin', name: '🎉 First Victory', desc: 'Win your first game' },
+        speedrun: { id: 'speedrun', name: '⚡ Speed Demon', desc: 'Win in under 30 seconds' },
+        perfectGame: { id: 'perfectGame', name: '👑 Perfect Game', desc: 'Win without opponent scoring' },
+        comebackKing: { id: 'comebackKing', name: '🔄 Comeback King', desc: 'Win after being 0-2 down' },
+        tenWins: { id: 'tenWins', name: '🏆 Decade', desc: 'Reach 10 wins' },
+        fiftyWins: { id: 'fiftyWins', name: '🎖️ Champion', desc: 'Reach 50 wins' },
+        fiveStreak: { id: 'fiveStreak', name: '🔥 On Fire', desc: 'Get a 5-game win streak' },
+        centerMaster: { id: 'centerMaster', name: '🎯 Center Master', desc: 'Win by playing center' },
+        blitzKing: { id: 'blitzKing', name: '⚡ Blitz King', desc: 'Win a Blitz match' },
+        cornerSpecialist: { id: 'cornerSpecialist', name: '📐 Corner Specialist', desc: 'Win using 3+ corners' },
+      };
+
+      const playSound = (type) => {
+        if (!soundEnabled) return;
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          if (type === 'move') {
+            oscillator.frequency.value = 400;
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+          } else if (type === 'win') {
+            oscillator.frequency.value = 600;
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+          }
+        } catch (e) {}
+      };
+
+      const calculateWinner = (squares) => {
+        const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+        for (let line of lines) {
+          const [a, b, c] = line;
+          if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+            return { winner: squares[a], line };
+          }
+        }
+        return { winner: null, line: null };
+      };
+
+      const checkAchievements = (winner, playerName, gameTime) => {
+        const newAchievements = [];
+        const playerWins = winner === 'X' ? scores.x : scores.o;
+        if (winner === 'X' || winner === 'O') {
+          if (!achievements.includes('firstWin')) newAchievements.push('firstWin');
+          if (gameTime < 30) newAchievements.push('speedrun');
+          if (scores[winner === 'X' ? 'o' : 'x'] === 0) newAchievements.push('perfectGame');
+          if (seriesMode === 'best' && scores[winner === 'X' ? 'x' : 'o'] >= 2 && scores[winner === 'X' ? 'o' : 'x'] === 0) newAchievements.push('comebackKing');
+          if (playerWins >= 10) newAchievements.push('tenWins');
+          if (playerWins >= 50) newAchievements.push('fiftyWins');
+          if (winStreak[winner === 'X' ? 'x' : 'o'] >= 5) newAchievements.push('fiveStreak');
+          if (board[4] === winner) newAchievements.push('centerMaster');
+          if (gameMode === 'blitz') newAchievements.push('blitzKing');
+          const corners = [0, 2, 6, 8].filter(i => board[i] === winner).length;
+          if (corners >= 3) newAchievements.push('cornerSpecialist');
+        }
+        const uniqueAchievements = [...new Set([...achievements, ...newAchievements])];
+        setAchievements(uniqueAchievements);
+      };
+
+      const updateLeaderboard = (playerName, won) => {
+        setLeaderboard(prev => {
+          const existing = prev.find(p => p.name === playerName);
+          const K = 32;
+          const newRating = (cur) => Math.round(cur + (won ? K : -K));
+          if (existing) {
+            return prev.map(p => p.name === playerName ? { ...p, wins: p.wins + (won ? 1 : 0), losses: p.losses + (won ? 0 : 1), rating: newRating(p.rating) } : p).sort((a, b) => b.rating - a.rating);
+          }
+          return [...prev, { name: playerName, wins: won ? 1 : 0, losses: won ? 0 : 1, rating: newRating(1200) }].sort((a, b) => b.rating - a.rating);
+        });
+      };
+
+      const getBestMove = (squares, diff) => {
+        const getScore = (sq) => {
+          const { winner } = calculateWinner(sq);
+          if (winner === 'O') return 10;
+          if (winner === 'X') return -10;
+          return 0;
+        };
+        const minimax = (sq, depth, isMax) => {
+          const score = getScore(sq);
+          if (score !== 0) return score - depth;
+          if (sq.every((c) => c !== null)) return 0;
+          if (isMax) {
+            let best = -Infinity;
+            for (let i = 0; i < 9; i++) {
+              if (sq[i] === null) {
+                sq[i] = 'O';
+                best = Math.max(best, minimax(sq, depth + 1, false));
+                sq[i] = null;
+              }
+            }
+            return best;
+          } else {
+            let best = Infinity;
+            for (let i = 0; i < 9; i++) {
+              if (sq[i] === null) {
+                sq[i] = 'X';
+                best = Math.min(best, minimax(sq, depth + 1, true));
+                sq[i] = null;
+              }
+            }
+            return best;
+          }
+        };
+        if (diff === 'easy') {
+          const empty = squares.map((v, i) => (v === null ? i : null)).filter((v) => v !== null);
+          return empty[Math.floor(Math.random() * empty.length)];
+        }
+        let best = -Infinity;
+        let bestMove = null;
+        for (let i = 0; i < 9; i++) {
+          if (squares[i] === null) {
+            squares[i] = 'O';
+            const score = minimax(squares, 0, false);
+            squares[i] = null;
+            if (score > best) {
+              best = score;
+              bestMove = i;
+            }
+          }
+        }
+        return bestMove;
+      };
+
+      const { winner: gameWinner, line: winningLine } = calculateWinner(board);
+      const isBoardFull = board.every((cell) => cell !== null);
+      const gameOver = gameWinner || isBoardFull;
+
+      useEffect(() => {
+        if (gameState === 'playing' && timeLimit > 0 && timeLeft > 0 && !gameOver) {
+          timerRef.current = setTimeout(() => {
+            setTimeLeft((t) => {
+              if (t - 1 <= 0) {
+                endGame(isXNext ? 'O' : 'X');
+                return 0;
+              }
+              return t - 1;
+            });
+          }, 1000);
+        }
+        return () => clearTimeout(timerRef.current);
+      }, [timeLeft, gameState, gameOver, isXNext, timeLimit]);
+
+      const endGame = (winner) => {
+        setGameState('ended');
+        playSound('win');
+        const gameTime = Math.floor((Date.now() - gameStartTime) / 1000);
+        updateStats(winner, gameTime);
+      };
+
+      const handleClick = (index) => {
+        if (board[index] || gameWinner || replayMode) return;
+        const newBoard = [...board];
+        newBoard[index] = isXNext ? 'X' : 'O';
+        setBoard(newBoard);
+        setMoveHistory([...moveHistory, index]);
+        const newHeatmap = [...positionHeatmap];
+        newHeatmap[index]++;
+        setPositionHeatmap(newHeatmap);
+        playSound('move');
+        const { winner: newWinner } = calculateWinner(newBoard);
+        if (newWinner || newBoard.every((cell) => cell !== null)) {
+          endGame(newWinner || 'Draw');
+        } else {
+          setIsXNext(!isXNext);
+        }
+      };
+
+      const updateStats = (winner, gameTime) => {
+        setStats((s) => ({
+          ...s,
+          xWins: winner === 'X' ? s.xWins + 1 : s.xWins,
+          oWins: winner === 'O' ? s.oWins + 1 : s.oWins,
+          draws: winner === 'Draw' ? s.draws + 1 : s.draws,
+          totalGames: s.totalGames + 1,
+        }));
+        setGameHistory([...gameHistory, winner]);
+        if (winner === 'X') {
+          setWinStreak((w) => ({ x: w.x + 1, o: 0 }));
+          setScores((s) => ({ ...s, x: s.x + 1 }));
+          checkAchievements('X', playerNames.x, gameTime);
+          updateLeaderboard(playerNames.x, true);
+          updateLeaderboard(playerNames.o, false);
+        } else if (winner === 'O') {
+          setWinStreak((w) => ({ x: 0, o: w.o + 1 }));
+          setScores((s) => ({ ...s, o: s.o + 1 }));
+          checkAchievements('O', playerNames.o, gameTime);
+          updateLeaderboard(playerNames.o, true);
+          updateLeaderboard(playerNames.x, false);
+        } else {
+          setWinStreak({ x: 0, o: 0 });
+        }
+      };
+
+      const startGame = () => {
+        setGameState('playing');
+        setBoard(Array(9).fill(null));
+        setIsXNext(true);
+        setMoveHistory([]);
+        setReplayMode(false);
+        setReplayIndex(0);
+        setGameStartTime(Date.now());
+        if (timeLimit > 0) setTimeLeft(timeLimit);
+        if (gameMode === 'blitz') setScores({ x: 0, o: 0 });
+      };
+
+      const resetAll = () => {
+        setScores({ x: 0, o: 0 });
+        setStats({ xWins: 0, oWins: 0, draws: 0, totalGames: 0 });
+        setGameHistory([]);
+        setWinStreak({ x: 0, o: 0 });
+        setBoard(Array(9).fill(null));
+        setIsXNext(true);
+        setMoveHistory([]);
+        setPositionHeatmap(Array(9).fill(0));
+        setGameState('menu');
+      };
+
+      const playAgain = () => {
+        if (gameMode === 'blitz') {
+          if (Math.max(scores.x, scores.o) >= blitzTarget) {
+            setGameState('menu');
+            setScores({ x: 0, o: 0 });
+          } else {
+            startGame();
+          }
+        } else if (seriesMode !== 'single') {
+          if ((seriesMode === 'best' && scores.x >= seriesTarget) || (seriesMode === 'best' && scores.o >= seriesTarget)) {
+            resetAll();
+          } else {
+            startGame();
+          }
+        } else {
+          startGame();
+        }
+      };
+
+      const shareResults = () => {
+        navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      };
+
+      const replayGame = () => {
+        setReplayMode(true);
+        setReplayIndex(0);
+        setBoard(Array(9).fill(null));
+      };
+
+      const nextReplayMove = () => {
+        if (replayIndex < moveHistory.length) {
+          const newBoard = [...board];
+          const moveNum = replayIndex;
+          const player = moveNum % 2 === 0 ? 'X' : 'O';
+          newBoard[moveHistory[replayIndex]] = player;
+          setBoard(newBoard);
+          setReplayIndex(replayIndex + 1);
+        }
+      };
+
+      const getHeatmapColor = (index) => {
+        const max = Math.max(...positionHeatmap);
+        const intensity = max > 0 ? positionHeatmap[index] / max : 0;
+        if (intensity === 0) return 'opacity-0';
+        if (intensity < 0.33) return 'bg-blue-600 bg-opacity-20';
+        if (intensity < 0.66) return 'bg-blue-600 bg-opacity-40';
+        return 'bg-blue-600 bg-opacity-60';
+      };
+
+      const renderSquare = (index) => {
+        const isWinningSquare = winningLine && winningLine.includes(index);
+        return (
+          <button key={index} onClick={() => handleClick(index)} className={`relative w-20 h-20 border-2 text-4xl font-black transition transform hover:scale-105 active:scale-95 bg-slate-700 hover:bg-slate-600 border-purple-500 ${isWinningSquare ? 'ring-4 ring-yellow-400' : ''}`}>
+            <div className={`absolute inset-0 ${getHeatmapColor(index)} rounded`} />
+            <span className={`relative z-10 ${board[index] === 'X' ? 'text-cyan-400' : board[index] === 'O' ? 'text-pink-400' : ''}`}>{board[index]}</span>
+          </button>
+        );
+      };
+
+      return (
+        <div className="w-full min-h-screen flex flex-col items-center justify-center gap-4 font-mono p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+          {gameState === 'menu' && (
+            <div className="text-center max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+              <h1 className="text-6xl font-black text-cyan-400 mb-2 tracking-wider">X vs O</h1>
+              <p className="text-xl text-purple-300 mb-8">Ultimate Tic-Tac-Toe Experience</p>
+
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="block text-sm mb-2">Your Name:</label>
+                  <input type="text" placeholder="Your name" value={nameInputs.x} onChange={(e) => setNameInputs({ ...nameInputs, x: e.target.value })} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-2">Opponent Name:</label>
+                  <input type="text" placeholder="Friend's name" value={nameInputs.o} onChange={(e) => setNameInputs({ ...nameInputs, o: e.target.value })} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-2">Game Mode:</label>
+                  <select value={gameMode} onChange={(e) => setGameMode(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                    <option value="classic">Classic</option>
+                    <option value="blitz">⚡ Blitz</option>
+                  </select>
+                </div>
+                {gameMode === 'blitz' && (
+                  <div>
+                    <label className="block text-sm mb-2">Blitz Target:</label>
+                    <select value={blitzTarget} onChange={(e) => setBlitzTarget(parseInt(e.target.value))} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                      <option value={3}>First to 3</option>
+                      <option value={5}>First to 5</option>
+                      <option value={10}>First to 10</option>
+                    </select>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm mb-2">Opponent Type:</label>
+                  <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                    <option value="pvp">Player vs Player</option>
+                    <option value="easy">vs AI (Easy)</option>
+                    <option value="hard">vs AI (Hard)</option>
+                  </select>
+                </div>
+                {gameMode === 'classic' && (
+                  <>
+                    <div>
+                      <label className="block text-sm mb-2">Series Mode:</label>
+                      <select value={seriesMode} onChange={(e) => setSeriesMode(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                        <option value="single">Single Match</option>
+                        <option value="best">Best of N</option>
+                      </select>
+                    </div>
+                    {seriesMode === 'best' && (
+                      <div>
+                        <label className="block text-sm mb-2">Best of:</label>
+                        <select value={seriesTarget} onChange={(e) => setSeriesTarget(parseInt(e.target.value))} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                          <option value={3}>Best of 3</option>
+                          <option value={5}>Best of 5</option>
+                          <option value={7}>Best of 7</option>
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
+                <div>
+                  <label className="block text-sm mb-2">Time Limit (0 = disabled):</label>
+                  <input type="number" min="0" max="60" value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white" />
+                </div>
+              </div>
+
+              <div className="flex gap-4 justify-center mb-8 flex-wrap">
+                <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded">☀️ Light</button>
+                <button onClick={() => setSoundEnabled(!soundEnabled)} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded">{soundEnabled ? '🔊 Sound' : '🔇 Mute'}</button>
+              </div>
+
+              <div className="mb-8">
+                <h3 className="text-lg font-bold mb-4 text-cyan-400">🏆 Leaderboard</h3>
+                <div className="bg-slate-800 p-4 rounded-lg max-w-md mx-auto">
+                  {leaderboard.length === 0 ? (
+                    <p className="text-sm text-gray-400">No players yet</p>
+                  ) : (
+                    leaderboard.slice(0, 5).map((player, idx) => (
+                      <div key={idx} className="flex justify-between text-sm mb-2">
+                        <span>#{idx + 1} {player.name}</span>
+                        <span className="text-cyan-400 font-bold">{player.rating}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h3 className="text-lg font-bold mb-4 text-yellow-400">🎖️ Achievements ({achievements.length}/{Object.keys(ACHIEVEMENTS).length})</h3>
+                <div className="max-w-md mx-auto grid grid-cols-2 gap-2">
+                  {Object.values(ACHIEVEMENTS).map((ach) => (
+                    <div key={ach.id} className={`p-2 rounded text-xs text-center ${achievements.includes(ach.id) ? 'bg-yellow-600' : 'bg-gray-700 opacity-50'}`} title={ach.desc}>
+                      {ach.name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={() => { setPlayerNames({ x: nameInputs.x || 'X', o: nameInputs.o || 'O' }); startGame(); }} className="px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-lg rounded-lg transition transform hover:scale-105">
+                START GAME
+              </button>
+            </div>
+          )}
+
+          {(gameState === 'playing' || gameState === 'ended') && (
+            <div className="flex flex-col items-center gap-4 w-full">
+              <div className="flex justify-between items-center w-full max-w-md">
+                <h1 className="text-3xl font-black text-cyan-400">X vs O</h1>
+                <button onClick={() => setShowSettings(!showSettings)} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-sm">⚙️</button>
+              </div>
+
+              {showSettings && (
+                <div className="w-full max-w-md p-4 rounded-lg border-2 bg-slate-800 border-purple-500">
+                  <button onClick={() => setSoundEnabled(!soundEnabled)} className="text-sm mb-2 block w-full text-left">{soundEnabled ? '🔊 Sound ON' : '🔇 Sound OFF'}</button>
+                  <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="text-sm block mb-2 w-full text-left">{theme === 'dark' ? '☀️ Light' : '🌙 Dark'}</button>
+                  <button onClick={shareResults} className="text-sm block text-cyan-400 w-full text-left">📤 Share</button>
+                </div>
+              )}
+
+              <div className="flex gap-6 text-2xl font-bold flex-wrap justify-center">
+                <div className="text-cyan-400">{playerNames.x}: {scores.x}</div>
+                <div className="text-pink-400">{playerNames.o}: {scores.o}</div>
+                {timeLimit > 0 && <div className="text-yellow-400">{timeLeft}s</div>}
+              </div>
+
+              {winStreak.x > 0 && <div className="text-sm text-cyan-300">🔥 {playerNames.x}: {winStreak.x} streak</div>}
+              {winStreak.o > 0 && <div className="text-sm text-pink-300">🔥 {playerNames.o}: {winStreak.o} streak</div>}
+
+              {gameOver && (
+                <div className="text-center">
+                  <p className="text-3xl font-black mb-4">
+                    {gameWinner ? <span className={gameWinner === 'X' ? 'text-cyan-400' : 'text-pink-400'}>{playerNames[gameWinner.toLowerCase()]} WINS!</span> : <span className="text-yellow-400">DRAW!</span>}
+                  </p>
+                  <div className="space-y-2">
+                    <button onClick={playAgain} className="block w-full px-6 py-2 bg-purple-500 hover:bg-purple-400 font-bold rounded-lg">Play Again</button>
+                    <button onClick={replayGame} className="block w-full px-6 py-2 bg-blue-500 hover:bg-blue-400 font-bold rounded-lg">📺 Replay</button>
+                    <button onClick={shareResults} className="block w-full px-6 py-2 bg-green-500 hover:bg-green-400 font-bold rounded-lg">📤 Share</button>
+                  </div>
+                </div>
+              )}
+
+              {!gameOver && <p className="text-lg text-purple-300">Turn: <span className={isXNext ? 'text-cyan-400' : 'text-pink-400'}>{isXNext ? playerNames.x : playerNames.o}</span></p>}
+
+              {replayMode ? (
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-sm">Move {replayIndex}/{moveHistory.length}</p>
+                  <button onClick={nextReplayMove} disabled={replayIndex >= moveHistory.length} className="px-4 py-2 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 rounded">Next</button>
+                  <button onClick={() => setReplayMode(false)} className="px-4 py-2 bg-gray-600 rounded">Exit</button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 p-4 bg-slate-900 border-4 border-purple-500 rounded-lg">
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => renderSquare(i))}
+                </div>
+              )}
+
+              <div className="w-full max-w-md bg-slate-800 p-3 rounded text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>Games: {stats.totalGames}</div>
+                  <div>{playerNames.x} Wins: {stats.xWins}</div>
+                  <div>{playerNames.o} Wins: {stats.oWins}</div>
+                  <div>Draws: {stats.draws}</div>
+                </div>
+              </div>
+
+              <button onClick={resetAll} className="px-6 py-2 bg-red-600 hover:bg-red-500 font-bold rounded-lg">↺ Reset</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<ArcadeXO />);
+  </script>
+</body>
+</html>
