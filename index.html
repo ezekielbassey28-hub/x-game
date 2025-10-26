@@ -225,7 +225,13 @@
               setGameId(roomCode);
               setPlayerSymbol('O');
               setPlayerNames({ x: data.player_x, o: nameInputs.o || 'Player 2' });
-              setBoard(data.board || Array(9).fill(null));
+              
+              // Convert empty strings back to null
+              const cleanBoard = (data.board || Array(9).fill(null)).map(cell => 
+                cell === '' || cell === undefined ? null : cell
+              );
+              setBoard(cleanBoard);
+              setIsXNext(data.turn === 'X');
               setGameState('playing');
 
               await gameRef.update({
@@ -264,10 +270,13 @@
       const makeMove = async (index) => {
         if (board[index] || gameState !== 'playing') return;
         
-        // Check if it's your turn
-        const yourTurn = (playerSymbol === 'X' && isXNext) || (playerSymbol === 'O' && !isXNext);
-        if (!yourTurn) {
-          alert('Not your turn!');
+        // Check if it's your turn - simpler logic
+        const isYourTurn = (playerSymbol === 'X' && isXNext) || (playerSymbol === 'O' && !isXNext);
+        
+        console.log('Player Symbol:', playerSymbol, 'Is X Next:', isXNext, 'Your Turn:', isYourTurn);
+        
+        if (!isYourTurn) {
+          alert('Not your turn! Wait for opponent.');
           return;
         }
 
