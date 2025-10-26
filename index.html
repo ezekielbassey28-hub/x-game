@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>X vs O - Real-Time Multiplayer</title>
+  <title>X vs O - Ultimate Multiplayer</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -11,17 +11,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    .scrollbar-hide::-webkit-scrollbar {
-      display: none;
-    }
-    .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    body {
-      margin: 0;
-      padding: 0;
-    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    body { margin: 0; padding: 0; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -30,7 +22,6 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyAw4D4zwUe2Qstk30XLd6eO_duoXDlCp1k",
       authDomain: "xo-game-multiplayer-538e5.firebaseapp.com",
@@ -38,8 +29,7 @@
       projectId: "xo-game-multiplayer-538e5",
       storageBucket: "xo-game-multiplayer-538e5.firebasestorage.app",
       messagingSenderId: "50264639507",
-      appId: "1:50264639507:web:be7d9a2a27096f036517e6",
-      measurementId: "G-M17J9WXZ4W"
+      appId: "1:50264639507:web:be7d9a2a27096f036517e6"
     };
 
     let firebaseInitialized = false;
@@ -48,85 +38,90 @@
     const initializeFirebase = () => {
       if (firebaseInitialized) return;
       try {
-        if (!window.firebase) {
-          console.error('Firebase library not loaded');
-          return;
-        }
-        
-        // Check if app already initialized
+        if (!window.firebase) return;
         if (window.firebase.apps && window.firebase.apps.length > 0) {
           database = window.firebase.database(window.firebase.apps[0]);
         } else {
           const app = window.firebase.initializeApp(firebaseConfig);
           database = window.firebase.database(app);
         }
-        
         firebaseInitialized = true;
-        console.log('Firebase initialized successfully');
       } catch (e) {
         console.error("Firebase initialization error:", e);
       }
+    };
+
+    const THEMES = {
+      dark: { bg: 'bg-slate-700', hover: 'hover:bg-slate-600', border: 'border-purple-500' },
+      neon: { bg: 'bg-purple-600', hover: 'hover:bg-purple-500', border: 'border-cyan-400' },
+      retro: { bg: 'bg-yellow-600', hover: 'hover:bg-yellow-500', border: 'border-red-500' },
+      minimal: { bg: 'bg-gray-600', hover: 'hover:bg-gray-500', border: 'border-white' }
+    };
+
+    const ACHIEVEMENTS = {
+      firstWin: { id: 'firstWin', name: '🎉 First Victory', desc: 'Win your first game' },
+      speedrun: { id: 'speedrun', name: '⚡ Speed Demon', desc: 'Win in under 20 seconds' },
+      perfectGame: { id: 'perfectGame', name: '👑 Perfect Game', desc: 'Win without opponent scoring' },
+      comeback: { id: 'comeback', name: '🔄 Clutch Victory', desc: 'Win on last possible move' },
+      tenWins: { id: 'tenWins', name: '🏆 10 Wins', desc: 'Reach 10 wins' },
+      fiftyWins: { id: 'fiftyWins', name: '🎖️ 50 Wins', desc: 'Reach 50 wins' },
+      streakFive: { id: 'streakFive', name: '🔥 5 Streak', desc: 'Win 5 games in a row' },
+      timerMaster: { id: 'timerMaster', name: '⏱️ Timer Master', desc: 'Win with timer enabled' },
+      bigBoard: { id: 'bigBoard', name: '🔲 Big Board', desc: 'Win on 4x4 grid' },
+      chatty: { id: 'chatty', name: '💬 Chatty', desc: 'Send 10 messages in game' }
     };
 
     function ArcadeXO() {
       const [gameState, setGameState] = useState('menu');
       const [board, setBoard] = useState(Array(9).fill(null));
       const [isXNext, setIsXNext] = useState(true);
-      const [scores, setScores] = useState({ x: 0, o: 0 });
-      const [stats, setStats] = useState({ xWins: 0, oWins: 0, draws: 0, totalGames: 0 });
       const [playerNames, setPlayerNames] = useState({ x: 'Player 1', o: 'Player 2' });
       const [nameInputs, setNameInputs] = useState({ x: '', o: '' });
       const [soundEnabled, setSoundEnabled] = useState(true);
-      const [showSettings, setShowSettings] = useState(false);
-      const [winStreak, setWinStreak] = useState({ x: 0, o: 0 });
-      const [achievements, setAchievements] = useState([]);
-      const [positionHeatmap, setPositionHeatmap] = useState(Array(9).fill(0));
-      const [leaderboard, setLeaderboard] = useState([]);
-      const [gameStartTime, setGameStartTime] = useState(null);
-      const [roomCode, setRoomCode] = useState('');
-      const [playerSymbol, setPlayerSymbol] = useState(null);
-      const [connectedPlayers, setConnectedPlayers] = useState(0);
+      const [theme, setTheme] = useState('dark');
       const [gameId, setGameId] = useState('');
-      const [waitingForOpponent, setWaitingForOpponent] = useState(false);
-      const timerRef = useRef(null);
+      const [playerSymbol, setPlayerSymbol] = useState(null);
+      const [roomCode, setRoomCode] = useState('');
+      const [gameMode, setGameMode] = useState('3x3');
+      const [timeLimit, setTimeLimit] = useState(0);
+      const [timeLeft, setTimeLeft] = useState(0);
+      const [achievements, setAchievements] = useState([]);
+      const [stats, setStats] = useState({ wins: 0, losses: 0, draws: 0 });
+      const [matchHistory, setMatchHistory] = useState([]);
+      const [chatMessages, setChatMessages] = useState([]);
+      const [chatInput, setChatInput] = useState('');
+      const [gameStartTime, setGameStartTime] = useState(null);
+      const [soundPack, setSoundPack] = useState('beep');
+      const [boardTheme, setBoardTheme] = useState('dark');
       const dbRef = useRef(null);
-
-      const ACHIEVEMENTS = {
-        firstWin: { id: 'firstWin', name: '🎉 First Victory', desc: 'Win your first game' },
-        speedrun: { id: 'speedrun', name: '⚡ Speed Demon', desc: 'Win in under 30 seconds' },
-        perfectGame: { id: 'perfectGame', name: '👑 Perfect Game', desc: 'Win without opponent scoring' },
-        comebackKing: { id: 'comebackKing', name: '🔄 Comeback King', desc: 'Win after being 0-2 down' },
-        tenWins: { id: 'tenWins', name: '🏆 Decade', desc: 'Reach 10 wins' },
-        fiftyWins: { id: 'fiftyWins', name: '🎖️ Champion', desc: 'Reach 50 wins' },
-        fiveStreak: { id: 'fiveStreak', name: '🔥 On Fire', desc: 'Get a 5-game win streak' },
-        centerMaster: { id: 'centerMaster', name: '🎯 Center Master', desc: 'Win by playing center' },
-        blitzKing: { id: 'blitzKing', name: '⚡ Blitz King', desc: 'Win a Blitz match' },
-        cornerSpecialist: { id: 'cornerSpecialist', name: '📐 Corner Specialist', desc: 'Win using 3+ corners' },
-      };
+      const timerRef = useRef(null);
 
       const playSound = (type) => {
         if (!soundEnabled) return;
         try {
           const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
+          const osc = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+          osc.connect(gain);
+          gain.connect(audioContext.destination);
+          
           if (type === 'move') {
-            oscillator.frequency.value = 400;
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.1);
+            osc.frequency.value = soundPack === 'beep' ? 400 : 600;
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + 0.1);
           } else if (type === 'win') {
-            oscillator.frequency.value = 600;
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
+            osc.frequency.value = soundPack === 'beep' ? 600 : 800;
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + 0.3);
           }
         } catch (e) {}
       };
+
+      const generateRoomCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
       const calculateWinner = (squares) => {
         const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
@@ -139,10 +134,6 @@
         return { winner: null, line: null };
       };
 
-      const generateRoomCode = () => {
-        return Math.random().toString(36).substring(2, 8).toUpperCase();
-      };
-
       const createGame = async () => {
         initializeFirebase();
         const newGameId = generateRoomCode();
@@ -150,70 +141,50 @@
         setRoomCode(newGameId);
         setPlayerSymbol('X');
         setPlayerNames({ x: nameInputs.x || 'Player 1', o: 'Waiting...' });
-        setWaitingForOpponent(true);
         setGameState('waiting');
+        setChatMessages([]);
+        setGameStartTime(Date.now());
 
         if (database) {
           try {
             const gameRef = database.ref(`games/${newGameId}`);
             await gameRef.set({
-              board: Array(9).fill(null),
+              board: Array(9).fill(''),
               turn: 'X',
               player_x: nameInputs.x || 'Player 1',
               player_o: null,
               status: 'waiting',
               created_at: new Date().getTime(),
+              gameMode: gameMode,
+              timeLimit: timeLimit,
+              messages: []
             });
 
-            // Listen for opponent joining
             gameRef.on('value', (snapshot) => {
               const data = snapshot.val();
               if (data) {
-                // Convert empty strings back to null
-                const cleanBoard = (data.board || Array(9).fill(null)).map(cell => 
-                  cell === '' || cell === undefined ? null : cell
-                );
+                const cleanBoard = (data.board || Array(9).fill('')).map(cell => cell === '' ? null : cell);
                 setBoard(cleanBoard);
                 setIsXNext(data.turn === 'X');
-                
-                // When opponent joins, update names and start game
                 if (data.player_o && data.player_o !== 'Waiting...') {
                   setPlayerNames({ x: data.player_x, o: data.player_o });
-                  setWaitingForOpponent(false);
-                  
-                  // Auto transition to playing state
-                  setTimeout(() => {
-                    setGameState('playing');
-                  }, 500);
+                  setTimeout(() => setGameState('playing'), 500);
                 }
-                
-                if (data.winner) {
-                  endMultiplayerGame(data.winner);
-                }
+                if (data.messages) setChatMessages(data.messages);
+                if (data.winner) endGame(data.winner);
               }
             });
 
             dbRef.current = gameRef;
           } catch (error) {
-            console.error('Error creating game:', error);
-            alert('Error creating game: ' + error.message);
+            alert('Error: ' + error.message);
           }
-        } else {
-          console.error('Database not initialized');
         }
       };
 
       const joinGame = async () => {
         initializeFirebase();
-        if (roomCode.length !== 6) {
-          alert('Room code must be 6 characters!');
-          return;
-        }
-        
-        if (!database) {
-          alert('Firebase not connected. Please try again.');
-          return;
-        }
+        if (roomCode.length !== 6 || !database) return;
 
         try {
           const gameRef = database.ref(`games/${roomCode}`);
@@ -225,14 +196,13 @@
               setGameId(roomCode);
               setPlayerSymbol('O');
               setPlayerNames({ x: data.player_x, o: nameInputs.o || 'Player 2' });
-              
-              // Convert empty strings back to null
-              const cleanBoard = (data.board || Array(9).fill(null)).map(cell => 
-                cell === '' || cell === undefined ? null : cell
-              );
+              const cleanBoard = (data.board || Array(9).fill('')).map(cell => cell === '' ? null : cell);
               setBoard(cleanBoard);
-              setIsXNext(data.turn === 'X');
+              setGameMode(data.gameMode || '3x3');
+              setTimeLimit(data.timeLimit || 0);
               setGameState('playing');
+              setChatMessages(data.messages || []);
+              setGameStartTime(Date.now());
 
               await gameRef.update({
                 player_o: nameInputs.o || 'Player 2',
@@ -242,182 +212,236 @@
               gameRef.on('value', (snapshot) => {
                 const updatedData = snapshot.val();
                 if (updatedData) {
-                  // Convert empty strings back to null
-                  const cleanBoard = (updatedData.board || Array(9).fill(null)).map(cell => 
-                    cell === '' || cell === undefined ? null : cell
-                  );
+                  const cleanBoard = (updatedData.board || Array(9).fill('')).map(cell => cell === '' ? null : cell);
                   setBoard(cleanBoard);
                   setIsXNext(updatedData.turn === 'X');
-                  if (updatedData.winner) {
-                    endMultiplayerGame(updatedData.winner);
-                  }
+                  if (updatedData.messages) setChatMessages(updatedData.messages);
+                  if (updatedData.winner) endGame(updatedData.winner);
                 }
               });
 
               dbRef.current = gameRef;
             } else {
-              alert('Room is full! Game already started.');
+              alert('Room is full!');
             }
           } else {
-            alert('Room code not found. Double-check the code!');
+            alert('Room not found!');
           }
         } catch (error) {
-          console.error('Error joining game:', error);
-          alert('Error joining game: ' + error.message);
+          alert('Error: ' + error.message);
         }
       };
 
       const makeMove = async (index) => {
         if (board[index] || gameState !== 'playing') return;
-        
-        // Check if it's your turn - simpler logic
         const isYourTurn = (playerSymbol === 'X' && isXNext) || (playerSymbol === 'O' && !isXNext);
-        
-        console.log('Player Symbol:', playerSymbol, 'Is X Next:', isXNext, 'Your Turn:', isYourTurn);
-        
-        if (!isYourTurn) {
-          alert('Not your turn! Wait for opponent.');
-          return;
-        }
+        if (!isYourTurn) return;
 
-        // Create clean board - convert ALL undefined/null to empty string or handle properly
         const newBoard = Array(9).fill(null);
         for (let i = 0; i < board.length; i++) {
-          newBoard[i] = board[i] === null || board[i] === undefined ? null : board[i];
+          newBoard[i] = board[i] === null ? null : board[i];
         }
         newBoard[index] = playerSymbol;
         playSound('move');
 
         const { winner } = calculateWinner(newBoard);
-        const isFull = newBoard.every(cell => cell !== null);
+        const cleanBoard = newBoard.map(cell => cell === null ? '' : cell);
 
         if (database && dbRef.current) {
           try {
-            // Create a clean object with no undefined values
-            const cleanBoard = newBoard.map(cell => cell === null || cell === undefined ? '' : cell);
-            
-            const updateData = {
+            await dbRef.current.update({
               board: cleanBoard,
-              turn: playerSymbol === 'X' ? 'O' : 'X'
-            };
-            
-            // Only set winner if game ended
-            if (winner) {
-              updateData.winner = winner;
-            } else if (isFull) {
-              updateData.winner = 'Draw';
-            }
-            
-            await dbRef.current.update(updateData);
+              turn: playerSymbol === 'X' ? 'O' : 'X',
+              winner: winner || (newBoard.every(c => c) ? 'Draw' : null)
+            });
           } catch (error) {
-            console.error('Error making move:', error);
-            console.log('Board:', board);
-            console.log('New Board:', newBoard);
-            alert('Error making move: ' + error.message);
+            alert('Error: ' + error.message);
           }
         }
       };
 
-      const endMultiplayerGame = (winner) => {
-        console.log('Game ended with winner:', winner);
-        setGameState('ended');
-        playSound('win');
-        updateMultiplayerStats(winner);
-      };
+      const sendMessage = async () => {
+        if (!chatInput.trim()) return;
+        const newMessages = [...chatMessages, { player: playerNames[playerSymbol.toLowerCase()], text: chatInput }];
+        setChatMessages(newMessages);
+        setChatInput('');
 
-      const updateMultiplayerStats = (winner) => {
-        setStats((s) => ({
-          ...s,
-          xWins: winner === 'X' ? s.xWins + 1 : s.xWins,
-          oWins: winner === 'O' ? s.oWins + 1 : s.oWins,
-          draws: winner === 'Draw' ? s.draws + 1 : s.draws,
-          totalGames: s.totalGames + 1,
-        }));
-      };
-
-      const resetGame = () => {
-        setGameState('menu');
-        setBoard(Array(9).fill(null));
-        setIsXNext(true);
-        setPlayerSymbol(null);
-        setGameId('');
-        setRoomCode('');
-        setWaitingForOpponent(false);
-        if (dbRef.current) {
-          dbRef.current.off();
+        if (database && dbRef.current) {
+          try {
+            await dbRef.current.update({ messages: newMessages });
+            checkAchievement('chatty', newMessages.length);
+          } catch (error) {
+            console.error('Error sending message:', error);
+          }
         }
       };
 
-      const playAgainSameRoom = async () => {
-        // Reset board for new game but keep players connected
+      const endGame = (winner) => {
+        setGameState('ended');
+        playSound('win');
+        const gameTime = Math.floor((Date.now() - gameStartTime) / 1000);
+        
+        if (winner === 'Draw') {
+          setStats(s => ({ ...s, draws: s.draws + 1 }));
+        } else if (winner === playerSymbol) {
+          setStats(s => ({ ...s, wins: s.wins + 1 }));
+          checkAchievement('firstWin');
+          if (gameTime < 20) checkAchievement('speedrun');
+        } else {
+          setStats(s => ({ ...s, losses: s.losses + 1 }));
+        }
+
+        const newMatch = {
+          opponent: winner === playerSymbol ? playerNames[playerSymbol === 'X' ? 'o' : 'x'] : 'Self',
+          result: winner === playerSymbol ? 'Won' : winner === 'Draw' ? 'Draw' : 'Lost',
+          date: new Date().toLocaleDateString(),
+          time: gameTime
+        };
+        setMatchHistory([newMatch, ...matchHistory]);
+      };
+
+      const checkAchievement = (achId, value = 0) => {
+        if (!achievements.includes(achId)) {
+          if (achId === 'chatty' && value >= 10) {
+            setAchievements([...achievements, achId]);
+          } else if (achId !== 'chatty') {
+            setAchievements([...achievements, achId]);
+          }
+        }
+      };
+
+      const playAgain = async () => {
         setBoard(Array(9).fill(null));
         setIsXNext(true);
-        setGameState('playing'); // Make sure we go back to playing state
-        console.log('Play again clicked, setting state to playing');
+        setGameState('playing');
+        setChatMessages([]);
+        setGameStartTime(Date.now());
 
         if (database && dbRef.current) {
           try {
             await dbRef.current.update({
               board: Array(9).fill(''),
               turn: 'X',
-              winner: null
+              winner: null,
+              messages: []
             });
           } catch (error) {
-            console.error('Error resetting game:', error);
+            console.error('Error:', error);
           }
         }
       };
 
-      const copyRoomCode = () => {
+      const backToMenu = () => {
+        setGameState('menu');
+        setBoard(Array(9).fill(null));
+        setPlayerSymbol(null);
+        setGameId('');
+        setRoomCode('');
+        setChatMessages([]);
+        if (dbRef.current) dbRef.current.off();
+      };
+
+      const copyCode = () => {
         navigator.clipboard.writeText(roomCode);
-        alert('Room code copied to clipboard!');
-      };
-
-      const getHeatmapColor = (index) => {
-        const max = Math.max(...positionHeatmap);
-        const intensity = max > 0 ? positionHeatmap[index] / max : 0;
-        if (intensity === 0) return 'opacity-0';
-        if (intensity < 0.33) return 'bg-blue-600 bg-opacity-20';
-        if (intensity < 0.66) return 'bg-blue-600 bg-opacity-40';
-        return 'bg-blue-600 bg-opacity-60';
-      };
-
-      const renderSquare = (index) => {
-        return (
-          <button key={index} onClick={() => makeMove(index)} className={`relative w-20 h-20 border-2 text-4xl font-black transition transform hover:scale-105 active:scale-95 bg-slate-700 hover:bg-slate-600 border-purple-500`}>
-            <div className={`absolute inset-0 ${getHeatmapColor(index)} rounded`} />
-            <span className={`relative z-10 ${board[index] === 'X' ? 'text-cyan-400' : board[index] === 'O' ? 'text-pink-400' : ''}`}>{board[index]}</span>
-          </button>
-        );
+        alert('Room code copied!');
       };
 
       const { winner: gameWinner } = calculateWinner(board);
-      const isBoardFull = board.every((cell) => cell !== null);
+      const isBoardFull = board.every(c => c !== null);
       const gameOver = gameWinner || isBoardFull;
+
+      useEffect(() => {
+        if (gameState === 'playing' && timeLimit > 0) {
+          if (timeLeft === 0) setTimeLeft(timeLimit);
+          timerRef.current = setTimeout(() => {
+            setTimeLeft(t => t > 0 ? t - 1 : timeLimit);
+          }, 1000);
+        }
+        return () => clearTimeout(timerRef.current);
+      }, [timeLeft, gameState, timeLimit]);
+
+      const themeColors = THEMES[boardTheme] || THEMES.dark;
 
       return (
         <div className="w-full min-h-screen flex flex-col items-center justify-center gap-4 font-mono p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
           {gameState === 'menu' && (
-            <div className="text-center max-w-2xl">
+            <div className="text-center max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
               <h1 className="text-6xl font-black text-cyan-400 mb-2 tracking-wider">X vs O</h1>
-              <p className="text-xl text-purple-300 mb-8">🌐 Real-Time Multiplayer</p>
+              <p className="text-xl text-purple-300 mb-8">🌐 Ultimate Multiplayer Experience</p>
 
               <div className="space-y-4 mb-8 max-w-md mx-auto">
-                <div>
-                  <label className="block text-sm mb-2">Your Name:</label>
-                  <input type="text" placeholder="Enter your name" value={nameInputs.x} onChange={(e) => setNameInputs({ ...nameInputs, x: e.target.value })} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white" />
-                </div>
+                <input type="text" placeholder="Your name" value={nameInputs.x} onChange={(e) => setNameInputs({ ...nameInputs, x: e.target.value })} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white" />
+                
+                <select value={gameMode} onChange={(e) => setGameMode(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                  <option value="3x3">3x3 Classic</option>
+                  <option value="4x4">4x4 Big Board</option>
+                </select>
 
-                <button onClick={createGame} className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg transition transform hover:scale-105">
-                  ➕ Create Game Room
-                </button>
+                <select value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value))} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                  <option value={0}>No Time Limit</option>
+                  <option value={10}>⏱️ 10 Seconds</option>
+                  <option value={20}>⏱️ 20 Seconds</option>
+                  <option value={30}>⏱️ 30 Seconds</option>
+                </select>
+
+                <select value={theme} onChange={(e) => setTheme(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                  <option value="dark">🌙 Dark</option>
+                  <option value="light">☀️ Light</option>
+                </select>
+
+                <select value={boardTheme} onChange={(e) => setBoardTheme(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                  <option value="dark">Dark Board</option>
+                  <option value="neon">Neon Board</option>
+                  <option value="retro">Retro Board</option>
+                  <option value="minimal">Minimal Board</option>
+                </select>
+
+                <select value={soundPack} onChange={(e) => setSoundPack(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
+                  <option value="beep">🔊 Beep</option>
+                  <option value="chime">🎵 Chime</option>
+                </select>
+
+                <button onClick={createGame} className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg">➕ Create Room</button>
 
                 <div className="border-t border-purple-500 py-4">
-                  <p className="text-sm text-purple-300 mb-4">OR</p>
-                  <input type="text" placeholder="Enter room code" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} maxLength="6" className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white mb-4 text-center text-2xl tracking-widest" />
-                  <button onClick={joinGame} className="w-full px-6 py-3 bg-pink-500 hover:bg-pink-400 text-black font-bold rounded-lg transition transform hover:scale-105">
-                    🔗 Join Game Room
-                  </button>
+                  <input type="text" placeholder="Room code" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} maxLength="6" className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white text-center text-2xl mb-4" />
+                  <input type="text" placeholder="Your name" value={nameInputs.o} onChange={(e) => setNameInputs({ ...nameInputs, o: e.target.value })} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white mb-4" />
+                  <button onClick={joinGame} className="w-full px-6 py-3 bg-pink-500 hover:bg-pink-400 text-black font-bold rounded-lg">🔗 Join Room</button>
+                </div>
+              </div>
+
+              <div className="mb-8 max-w-md mx-auto">
+                <h3 className="text-lg font-bold mb-2 text-cyan-400">📊 Your Stats</h3>
+                <div className="grid grid-cols-3 gap-2 text-sm bg-slate-800 p-3 rounded">
+                  <div>Wins: {stats.wins}</div>
+                  <div>Losses: {stats.losses}</div>
+                  <div>Draws: {stats.draws}</div>
+                </div>
+              </div>
+
+              <div className="mb-8 max-w-md mx-auto">
+                <h3 className="text-lg font-bold mb-2 text-yellow-400">🎖️ Achievements ({achievements.length}/{Object.keys(ACHIEVEMENTS).length})</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.values(ACHIEVEMENTS).map((ach) => (
+                    <div key={ach.id} className={`p-2 rounded text-xs text-center ${achievements.includes(ach.id) ? 'bg-yellow-600' : 'bg-gray-700 opacity-50'}`} title={ach.desc}>
+                      {ach.name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-8 max-w-md mx-auto">
+                <h3 className="text-lg font-bold mb-2 text-purple-400">📜 Match History</h3>
+                <div className="bg-slate-800 p-3 rounded max-h-32 overflow-y-auto text-xs">
+                  {matchHistory.length === 0 ? (
+                    <p className="text-gray-400">No matches yet</p>
+                  ) : (
+                    matchHistory.map((m, i) => (
+                      <div key={i} className="mb-2 border-b border-purple-500 pb-2">
+                        <span className={m.result === 'Won' ? 'text-cyan-400' : m.result === 'Lost' ? 'text-red-400' : 'text-yellow-400'}>{m.result}</span> vs {m.opponent} • {m.date}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -425,79 +449,69 @@
 
           {gameState === 'waiting' && (
             <div className="text-center max-w-md">
-              <h1 className="text-4xl font-black text-cyan-400 mb-4">Game Room Created! 🎮</h1>
+              <h1 className="text-4xl font-black text-cyan-400 mb-4">Room Created! 🎮</h1>
               <div className="bg-slate-800 p-6 rounded-lg mb-6 border-2 border-cyan-400">
                 <p className="text-sm text-purple-300 mb-2">Room Code:</p>
                 <p className="text-5xl font-black text-cyan-400 mb-4 tracking-widest">{roomCode}</p>
-                <button onClick={copyRoomCode} className="w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded">
-                  📋 Copy Code
-                </button>
+                <button onClick={copyCode} className="w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded">📋 Copy</button>
               </div>
-
-              <p className="text-xl text-purple-300 mb-4">Share this code with your friend!</p>
-              <p className="text-sm text-gray-400 mb-6">You are playing as: <span className="text-cyan-400 font-bold">X</span></p>
-
-              <div className="animate-pulse text-lg text-yellow-400">
-                ⏳ Waiting for opponent to join...
-              </div>
-
-              <button onClick={resetGame} className="mt-8 px-6 py-2 bg-red-600 hover:bg-red-500 font-bold rounded-lg">
-                Cancel
-              </button>
+              <p className="text-xl text-purple-300 mb-6">Share this code with your friend!</p>
+              <div className="animate-pulse text-lg text-yellow-400 mb-6">⏳ Waiting for opponent...</div>
+              <button onClick={backToMenu} className="px-6 py-2 bg-red-600 hover:bg-red-500 font-bold rounded-lg">Cancel</button>
             </div>
           )}
 
           {(gameState === 'playing' || gameState === 'ended') && (
-            <div className="flex flex-col items-center gap-4 w-full">
-              <div className="w-full max-w-md">
-                <div className="flex justify-between items-center mb-4">
-                  <h1 className="text-3xl font-black text-cyan-400">X vs O</h1>
-                  <button onClick={() => setShowSettings(!showSettings)} className="px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded text-sm">⚙️</button>
+            <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
+              <div className="w-full flex justify-between items-center">
+                <h1 className="text-3xl font-black text-cyan-400">X vs O</h1>
+                <button onClick={backToMenu} className="px-3 py-2 bg-red-600 hover:bg-red-500 rounded text-sm">🏠 Menu</button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+                <div className="p-3 rounded-lg bg-cyan-600">
+                  <p className="text-xs text-gray-200">You</p>
+                  <p className="text-lg font-bold">{playerSymbol === 'X' ? playerNames.x : playerNames.o}</p>
+                  <p className="text-sm">{playerSymbol}</p>
                 </div>
+                <div className="p-3 rounded-lg bg-pink-600">
+                  <p className="text-xs text-gray-200">Opponent</p>
+                  <p className="text-lg font-bold">{playerSymbol === 'X' ? playerNames.o : playerNames.x}</p>
+                  <p className="text-sm">{playerSymbol === 'X' ? 'O' : 'X'}</p>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4 text-center">
-                  <div className={`p-3 rounded-lg ${playerSymbol === 'X' ? 'bg-cyan-600' : 'bg-slate-700'}`}>
-                    <p className="text-xs text-gray-300">You</p>
-                    <p className="text-xl font-bold text-cyan-400">{playerSymbol === 'X' ? playerNames.x : playerNames.o}</p>
-                    <p className="text-sm text-cyan-300">{playerSymbol}</p>
-                  </div>
-                  <div className={`p-3 rounded-lg ${playerSymbol === 'O' ? 'bg-pink-600' : 'bg-slate-700'}`}>
-                    <p className="text-xs text-gray-300">Opponent</p>
-                    <p className="text-xl font-bold text-pink-400">{playerSymbol === 'X' ? playerNames.o : playerNames.x}</p>
-                    <p className="text-sm text-pink-300">{playerSymbol === 'X' ? 'O' : 'X'}</p>
+              {!gameOver && <p className="text-center p-2 bg-slate-800 rounded w-full max-w-md text-sm">{isXNext ? playerNames.x : playerNames.o}'s Turn {timeLimit > 0 && `(${timeLeft}s)`}</p>}
+
+              <div className={`grid gap-2 p-4 bg-slate-900 border-4 border-purple-500 rounded-lg ${gameMode === '3x3' ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                {board.map((cell, i) => (
+                  <button key={i} onClick={() => makeMove(i)} className={`w-16 h-16 border-2 text-3xl font-black transition transform hover:scale-105 active:scale-95 ${themeColors.bg} ${themeColors.hover} ${themeColors.border}`}>
+                    <span className={cell === 'X' ? 'text-cyan-400' : cell === 'O' ? 'text-pink-400' : ''}>{cell}</span>
+                  </button>
+                ))}
+              </div>
+
+              {gameOver && (
+                <div className="text-center">
+                  <p className="text-3xl font-black mb-4">{gameWinner ? (gameWinner === playerSymbol ? '🎉 YOU WIN!' : '😢 YOU LOST') : '🤝 DRAW!'}</p>
+                  <div className="space-y-2">
+                    <button onClick={playAgain} className="w-full px-6 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg">▶️ Play Again</button>
+                    <button onClick={backToMenu} className="w-full px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg">🏠 Menu</button>
                   </div>
                 </div>
+              )}
 
-                {!gameOver && (
-                  <div className="text-center mb-4 p-3 bg-slate-800 rounded">
-                    <p className="text-sm text-purple-300">
-                      {isXNext ? playerNames.x : playerNames.o}'s Turn
-                    </p>
-                    <p className={`text-2xl font-black ${isXNext ? 'text-cyan-400' : 'text-pink-400'}`}>
-                      {isXNext ? 'X' : 'O'}
-                    </p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-3 gap-2 p-4 bg-slate-900 border-4 border-purple-500 rounded-lg mb-4">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => renderSquare(i))}
+              <div className="w-full max-w-md bg-slate-800 p-3 rounded">
+                <h3 className="text-sm font-bold mb-2">💬 Chat</h3>
+                <div className="bg-slate-900 p-2 rounded h-24 overflow-y-auto text-xs mb-2">
+                  {chatMessages.map((msg, i) => (
+                    <p key={i}><span className="text-cyan-400">{msg.player}:</span> {msg.text}</p>
+                  ))}
                 </div>
-
-                {gameOver && (
-                  <div className="text-center mb-4">
-                    <p className="text-3xl font-black mb-4">
-                      {gameWinner ? <span className={gameWinner === 'X' ? 'text-cyan-400' : 'text-pink-400'}>{gameWinner === playerSymbol ? 'YOU WIN! 🎉' : 'YOU LOST 😢'}</span> : <span className="text-yellow-400">DRAW! 🤝</span>}
-                    </p>
-                    <div className="space-y-2">
-                      <button onClick={playAgainSameRoom} className="w-full px-6 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg">
-                        ▶️ Play Again
-                      </button>
-                      <button onClick={resetGame} className="w-full px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg">
-                        🏠 Back to Menu
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Message..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && sendMessage()} className="flex-1 px-2 py-1 bg-slate-700 border border-purple-500 rounded text-xs" />
+                  <button onClick={sendMessage} className="px-2 py-1 bg-purple-600 hover:bg-purple-500 rounded text-xs">Send</button>
+                </div>
               </div>
             </div>
           )}
