@@ -165,15 +165,24 @@
               created_at: new Date().getTime(),
             });
 
+            // Listen for opponent joining
             gameRef.on('value', (snapshot) => {
               const data = snapshot.val();
               if (data) {
                 setBoard(data.board || Array(9).fill(null));
                 setIsXNext(data.turn === 'X');
-                if (data.player_o) {
+                
+                // When opponent joins, update names and start game
+                if (data.player_o && data.player_o !== 'Waiting...') {
                   setPlayerNames({ x: data.player_x, o: data.player_o });
                   setWaitingForOpponent(false);
+                  
+                  // Auto transition to playing state
+                  setTimeout(() => {
+                    setGameState('playing');
+                  }, 500);
                 }
+                
                 if (data.winner) {
                   endMultiplayerGame(data.winner);
                 }
@@ -246,7 +255,10 @@
 
       const makeMove = async (index) => {
         if (board[index] || gameState !== 'playing') return;
-        if ((playerSymbol === 'X' && !isXNext) || (playerSymbol === 'O' && isXNext)) {
+        
+        // Check if it's your turn
+        const yourTurn = (playerSymbol === 'X' && isXNext) || (playerSymbol === 'O' && !isXNext);
+        if (!yourTurn) {
           alert('Not your turn!');
           return;
         }
@@ -258,11 +270,16 @@
         const { winner } = calculateWinner(newBoard);
 
         if (database && dbRef.current) {
-          await dbRef.current.update({
-            board: newBoard,
-            turn: playerSymbol === 'X' ? 'O' : 'X',
-            winner: winner || null
-          });
+          try {
+            await dbRef.current.update({
+              board: newBoard,
+              turn: playerSymbol === 'X' ? 'O' : 'X',
+              winner: winner || (newBoard.every(cell => cell !== null) ? 'Draw' : null)
+            });
+          } catch (error) {
+            console.error('Error making move:', error);
+            alert('Error making move: ' + error.message);
+          }
         }
       };
 
