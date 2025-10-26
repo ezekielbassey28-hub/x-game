@@ -10,10 +10,47 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    * { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, h4, h5, h6 { font-family: 'Poppins', sans-serif; }
     .scrollbar-hide::-webkit-scrollbar { display: none; }
     .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
     body { margin: 0; padding: 0; }
+    
+    .glass-effect {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(148, 113, 233, 0.3);
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .btn-gradient {
+      background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
+    }
+    
+    .card-glow {
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+    }
+    
+    .neon-box {
+      border: 2px solid #00d4ff;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -363,82 +400,124 @@
       const themeColors = THEMES[boardTheme] || THEMES.dark;
 
       return (
-        <div className="w-full min-h-screen flex flex-col items-center justify-center gap-4 font-mono p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+        <div className="w-full min-h-screen flex flex-col items-center justify-center gap-6 p-4 bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white">
           {gameState === 'menu' && (
             <div className="text-center max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
-              <h1 className="text-6xl font-black text-cyan-400 mb-2 tracking-wider">X vs O</h1>
-              <p className="text-xl text-purple-300 mb-8">🌐 Ultimate Multiplayer Experience</p>
+              <div className="mb-8">
+                <h1 className="text-7xl font-black mb-3 tracking-tighter">
+                  <span className="gradient-text">X vs O</span>
+                </h1>
+                <p className="text-xl font-light text-cyan-300/80 tracking-wide">ULTIMATE MULTIPLAYER EXPERIENCE</p>
+              </div>
 
-              <div className="space-y-4 mb-8 max-w-md mx-auto">
-                <input type="text" placeholder="Your name" value={nameInputs.x} onChange={(e) => setNameInputs({ ...nameInputs, x: e.target.value })} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white" />
+              <div className="space-y-4 mb-10 max-w-md mx-auto">
+                <div className="glass-effect p-4 rounded-xl">
+                  <label className="block text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-widest">Your Name</label>
+                  <input type="text" placeholder="Enter your name" value={nameInputs.x} onChange={(e) => setNameInputs({ ...nameInputs, x: e.target.value })} className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition" />
+                </div>
                 
-                <select value={gameMode} onChange={(e) => setGameMode(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
-                  <option value="3x3">3x3 Classic</option>
-                  <option value="4x4">4x4 Big Board</option>
-                </select>
+                <div className="glass-effect p-4 rounded-xl">
+                  <label className="block text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-widest">Game Mode</label>
+                  <select value={gameMode} onChange={(e) => setGameMode(e.target.value)} className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition">
+                    <option value="3x3">3×3 Classic</option>
+                    <option value="4x4">4×4 Big Board</option>
+                  </select>
+                </div>
 
-                <select value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value))} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
-                  <option value={0}>No Time Limit</option>
-                  <option value={10}>⏱️ 10 Seconds</option>
-                  <option value={20}>⏱️ 20 Seconds</option>
-                  <option value={30}>⏱️ 30 Seconds</option>
-                </select>
+                <div className="glass-effect p-4 rounded-xl">
+                  <label className="block text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-widest">⏱️ Time Limit</label>
+                  <select value={timeLimit} onChange={(e) => setTimeLimit(parseInt(e.target.value))} className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition">
+                    <option value={0}>No Time Limit</option>
+                    <option value={10}>10 Seconds</option>
+                    <option value={20}>20 Seconds</option>
+                    <option value={30}>30 Seconds</option>
+                  </select>
+                </div>
 
-                <select value={theme} onChange={(e) => setTheme(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
-                  <option value="dark">🌙 Dark</option>
-                  <option value="light">☀️ Light</option>
-                </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="glass-effect p-4 rounded-xl">
+                    <label className="block text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-widest">Board Theme</label>
+                    <select value={boardTheme} onChange={(e) => setBoardTheme(e.target.value)} className="w-full px-3 py-2 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition text-sm">
+                      <option value="dark">Dark</option>
+                      <option value="neon">Neon</option>
+                      <option value="retro">Retro</option>
+                      <option value="minimal">Minimal</option>
+                    </select>
+                  </div>
 
-                <select value={boardTheme} onChange={(e) => setBoardTheme(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
-                  <option value="dark">Dark Board</option>
-                  <option value="neon">Neon Board</option>
-                  <option value="retro">Retro Board</option>
-                  <option value="minimal">Minimal Board</option>
-                </select>
+                  <div className="glass-effect p-4 rounded-xl">
+                    <label className="block text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-widest">🔊 Sound</label>
+                    <select value={soundPack} onChange={(e) => setSoundPack(e.target.value)} className="w-full px-3 py-2 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white focus:outline-none focus:border-cyan-400 transition text-sm">
+                      <option value="beep">Beep</option>
+                      <option value="chime">Chime</option>
+                    </select>
+                  </div>
+                </div>
 
-                <select value={soundPack} onChange={(e) => setSoundPack(e.target.value)} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white">
-                  <option value="beep">🔊 Beep</option>
-                  <option value="chime">🎵 Chime</option>
-                </select>
+                <button onClick={createGame} className="btn-gradient w-full px-6 py-4 text-black font-bold text-lg rounded-xl transition duration-300 uppercase tracking-wide">
+                  ➕ Create Room
+                </button>
 
-                <button onClick={createGame} className="w-full px-6 py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg">➕ Create Room</button>
+                <div className="relative my-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-cyan-500/20"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-4 bg-slate-950 text-gray-400 uppercase tracking-widest text-xs font-semibold">Or Join</span>
+                  </div>
+                </div>
 
-                <div className="border-t border-purple-500 py-4">
-                  <input type="text" placeholder="Room code" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} maxLength="6" className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white text-center text-2xl mb-4" />
-                  <input type="text" placeholder="Your name" value={nameInputs.o} onChange={(e) => setNameInputs({ ...nameInputs, o: e.target.value })} className="w-full px-4 py-2 bg-slate-800 border border-purple-500 rounded text-white mb-4" />
-                  <button onClick={joinGame} className="w-full px-6 py-3 bg-pink-500 hover:bg-pink-400 text-black font-bold rounded-lg">🔗 Join Room</button>
+                <div className="glass-effect p-4 rounded-xl">
+                  <label className="block text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-widest">Room Code</label>
+                  <input type="text" placeholder="000000" value={roomCode} onChange={(e) => setRoomCode(e.target.value.toUpperCase())} maxLength="6" className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white text-center text-3xl font-black tracking-widest focus:outline-none focus:border-cyan-400 transition" />
+                </div>
+
+                <div className="glass-effect p-4 rounded-xl">
+                  <label className="block text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-widest">Your Name</label>
+                  <input type="text" placeholder="Enter your name" value={nameInputs.o} onChange={(e) => setNameInputs({ ...nameInputs, o: e.target.value })} className="w-full px-4 py-3 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-400 transition" />
+                </div>
+
+                <button onClick={joinGame} className="w-full px-6 py-4 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-lg rounded-xl transition duration-300 hover:shadow-lg hover:shadow-pink-500/50 uppercase tracking-wide">
+                  🔗 Join Room
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
+                <div className="card-glow p-4 rounded-xl text-center">
+                  <p className="text-3xl font-black gradient-text">{stats.wins}</p>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mt-2">Wins</p>
+                </div>
+                <div className="card-glow p-4 rounded-xl text-center">
+                  <p className="text-3xl font-black text-purple-400">{stats.losses}</p>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mt-2">Losses</p>
+                </div>
+                <div className="card-glow p-4 rounded-xl text-center">
+                  <p className="text-3xl font-black text-amber-400">{stats.draws}</p>
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mt-2">Draws</p>
                 </div>
               </div>
 
-              <div className="mb-8 max-w-md mx-auto">
-                <h3 className="text-lg font-bold mb-2 text-cyan-400">📊 Your Stats</h3>
-                <div className="grid grid-cols-3 gap-2 text-sm bg-slate-800 p-3 rounded">
-                  <div>Wins: {stats.wins}</div>
-                  <div>Losses: {stats.losses}</div>
-                  <div>Draws: {stats.draws}</div>
-                </div>
-              </div>
-
-              <div className="mb-8 max-w-md mx-auto">
-                <h3 className="text-lg font-bold mb-2 text-yellow-400">🎖️ Achievements ({achievements.length}/{Object.keys(ACHIEVEMENTS).length})</h3>
+              <div className="max-w-md mx-auto mb-8">
+                <h3 className="text-lg font-black gradient-text mb-3 uppercase tracking-widest">🎖️ Achievements</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {Object.values(ACHIEVEMENTS).map((ach) => (
-                    <div key={ach.id} className={`p-2 rounded text-xs text-center ${achievements.includes(ach.id) ? 'bg-yellow-600' : 'bg-gray-700 opacity-50'}`} title={ach.desc}>
-                      {ach.name}
+                    <div key={ach.id} className={`p-3 rounded-lg text-xs text-center transition ${achievements.includes(ach.id) ? 'card-glow bg-cyan-500/20' : 'bg-slate-800/50 opacity-50'}`} title={ach.desc}>
+                      <p className="font-bold">{ach.name}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mb-8 max-w-md mx-auto">
-                <h3 className="text-lg font-bold mb-2 text-purple-400">📜 Match History</h3>
-                <div className="bg-slate-800 p-3 rounded max-h-32 overflow-y-auto text-xs">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-black text-purple-400 mb-3 uppercase tracking-widest">📜 Match History</h3>
+                <div className="glass-effect p-4 rounded-xl max-h-32 overflow-y-auto text-xs">
                   {matchHistory.length === 0 ? (
-                    <p className="text-gray-400">No matches yet</p>
+                    <p className="text-gray-500">No matches yet</p>
                   ) : (
                     matchHistory.map((m, i) => (
-                      <div key={i} className="mb-2 border-b border-purple-500 pb-2">
-                        <span className={m.result === 'Won' ? 'text-cyan-400' : m.result === 'Lost' ? 'text-red-400' : 'text-yellow-400'}>{m.result}</span> vs {m.opponent} • {m.date}
+                      <div key={i} className="mb-2 pb-2 border-b border-purple-500/30">
+                        <span className={`font-bold ${m.result === 'Won' ? 'text-cyan-400' : m.result === 'Lost' ? 'text-red-400' : 'text-amber-400'}`}>{m.result}</span>
+                        <span className="text-gray-400"> vs {m.opponent}</span>
                       </div>
                     ))
                   )}
@@ -449,39 +528,95 @@
 
           {gameState === 'waiting' && (
             <div className="text-center max-w-md">
-              <h1 className="text-4xl font-black text-cyan-400 mb-4">Room Created! 🎮</h1>
-              <div className="bg-slate-800 p-6 rounded-lg mb-6 border-2 border-cyan-400">
-                <p className="text-sm text-purple-300 mb-2">Room Code:</p>
-                <p className="text-5xl font-black text-cyan-400 mb-4 tracking-widest">{roomCode}</p>
-                <button onClick={copyCode} className="w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded">📋 Copy</button>
+              <h1 className="text-5xl font-black mb-8">
+                <span className="gradient-text">ROOM CREATED</span>
+              </h1>
+              <div className="neon-box card-glow p-8 rounded-2xl mb-8">
+                <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-widest">Your Room Code</p>
+                <p className="text-6xl font-black text-cyan-400 mb-6 tracking-[0.2em] font-mono">{roomCode}</p>
+                <button onClick={copyCode} className="btn-gradient w-full px-4 py-3 text-black font-bold rounded-lg text-sm uppercase tracking-wide">📋 Copy Code</button>
               </div>
-              <p className="text-xl text-purple-300 mb-6">Share this code with your friend!</p>
-              <div className="animate-pulse text-lg text-yellow-400 mb-6">⏳ Waiting for opponent...</div>
-              <button onClick={backToMenu} className="px-6 py-2 bg-red-600 hover:bg-red-500 font-bold rounded-lg">Cancel</button>
+              <p className="text-lg text-gray-300 mb-6">Share this code with your friend!</p>
+              <div className="flex justify-center gap-2 mb-8">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse delay-100"></div>
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse delay-200"></div>
+              </div>
+              <p className="text-sm text-gray-500 mb-6">Waiting for opponent...</p>
+              <button onClick={backToMenu} className="px-6 py-3 bg-red-500/20 border border-red-500/50 text-red-400 font-bold rounded-lg text-sm uppercase tracking-wide hover:bg-red-500/30 transition">Cancel</button>
             </div>
           )}
 
           {(gameState === 'playing' || gameState === 'ended') && (
-            <div className="flex flex-col items-center gap-4 w-full max-w-4xl">
+            <div className="flex flex-col items-center gap-6 w-full max-w-4xl">
               <div className="w-full flex justify-between items-center">
-                <h1 className="text-3xl font-black text-cyan-400">X vs O</h1>
-                <button onClick={backToMenu} className="px-3 py-2 bg-red-600 hover:bg-red-500 rounded text-sm">🏠 Menu</button>
+                <h1 className="text-4xl font-black gradient-text">X vs O</h1>
+                <button onClick={backToMenu} className="px-4 py-2 bg-red-500/20 border border-red-500/50 text-red-400 font-bold rounded-lg text-sm uppercase tracking-wide hover:bg-red-500/30 transition">🏠 Menu</button>
               </div>
 
               <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-                <div className="p-3 rounded-lg bg-cyan-600">
-                  <p className="text-xs text-gray-200">You</p>
-                  <p className="text-lg font-bold">{playerSymbol === 'X' ? playerNames.x : playerNames.o}</p>
-                  <p className="text-sm">{playerSymbol}</p>
+                <div className="card-glow p-4 rounded-xl text-center">
+                  <p className="text-xs text-gray-400 uppercase tracking-widest">You</p>
+                  <p className="text-lg font-bold gradient-text mt-2">{playerSymbol === 'X' ? playerNames.x : playerNames.o}</p>
+                  <p className="text-2xl font-black text-cyan-400 mt-1">{playerSymbol}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-pink-600">
-                  <p className="text-xs text-gray-200">Opponent</p>
-                  <p className="text-lg font-bold">{playerSymbol === 'X' ? playerNames.o : playerNames.x}</p>
-                  <p className="text-sm">{playerSymbol === 'X' ? 'O' : 'X'}</p>
+                <div className="card-glow p-4 rounded-xl text-center">
+                  <p className="text-xs text-gray-400 uppercase tracking-widest">Opponent</p>
+                  <p className="text-lg font-bold text-purple-400 mt-2">{playerSymbol === 'X' ? playerNames.o : playerNames.x}</p>
+                  <p className="text-2xl font-black text-pink-400 mt-1">{playerSymbol === 'X' ? 'O' : 'X'}</p>
                 </div>
               </div>
 
-              {!gameOver && <p className="text-center p-2 bg-slate-800 rounded w-full max-w-md text-sm">{isXNext ? playerNames.x : playerNames.o}'s Turn {timeLimit > 0 && `(${timeLeft}s)`}</p>}
+              {!gameOver && (
+                <div className="card-glow p-4 rounded-xl w-full max-w-md text-center">
+                  <p className="text-sm text-gray-400 uppercase tracking-widest mb-2">Current Turn</p>
+                  <p className="text-2xl font-black gradient-text">{isXNext ? playerNames.x : playerNames.o}</p>
+                  {timeLimit > 0 && <p className="text-lg font-bold text-amber-400 mt-2">⏱️ {timeLeft}s</p>}
+                </div>
+              )}
+
+              <div className={`grid gap-3 p-6 bg-slate-900/50 border border-cyan-500/30 rounded-2xl ${gameMode === '3x3' ? 'grid-cols-3' : 'grid-cols-4'}`}>
+                {board.map((cell, i) => (
+                  <button key={i} onClick={() => makeMove(i)} className={`w-16 h-16 border-2 text-3xl font-black transition transform hover:scale-110 active:scale-95 rounded-lg ${themeColors.bg} ${themeColors.hover} ${themeColors.border} hover:shadow-lg`}>
+                    <span className={cell === 'X' ? 'text-cyan-400' : cell === 'O' ? 'text-pink-400' : ''}>{cell}</span>
+                  </button>
+                ))}
+              </div>
+
+              {gameOver && (
+                <div className="text-center">
+                  <div className="mb-6">
+                    <p className="text-5xl font-black mb-3">
+                      {gameWinner ? (gameWinner === playerSymbol ? '🎉' : '😢') : '🤝'}
+                    </p>
+                    <p className="text-3xl font-black gradient-text">
+                      {gameWinner ? (gameWinner === playerSymbol ? 'YOU WIN!' : 'YOU LOST') : 'DRAW!'}
+                    </p>
+                  </div>
+                  <div className="space-y-2 max-w-md">
+                    <button onClick={playAgain} className="btn-gradient w-full px-6 py-3 text-black font-bold rounded-lg text-sm uppercase tracking-wide">▶️ Play Again</button>
+                    <button onClick={backToMenu} className="w-full px-6 py-3 bg-red-500/20 border border-red-500/50 text-red-400 font-bold rounded-lg text-sm uppercase tracking-wide hover:bg-red-500/30 transition">🏠 Back to Menu</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="w-full max-w-md glass-effect p-4 rounded-xl">
+                <h3 className="text-sm font-bold text-cyan-300 mb-3 uppercase tracking-widest">💬 Chat</h3>
+                <div className="bg-slate-950/50 p-3 rounded-lg h-24 overflow-y-auto text-xs mb-3 border border-cyan-500/20">
+                  {chatMessages.map((msg, i) => (
+                    <p key={i} className="mb-1">
+                      <span className="text-cyan-400 font-bold">{msg.player}:</span>
+                      <span className="text-gray-300 ml-2">{msg.text}</span>
+                    </p>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input type="text" placeholder="Type message..." value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && sendMessage()} className="flex-1 px-3 py-2 bg-slate-800/50 border border-cyan-500/30 rounded-lg text-xs focus:outline-none focus:border-cyan-400 transition" />
+                  <button onClick={sendMessage} className="px-3 py-2 bg-cyan-500/30 border border-cyan-500/50 text-cyan-400 font-bold rounded-lg text-xs hover:bg-cyan-500/50 transition">Send</button>
+                </div>
+              </div>
+            </div>
+          )}<p className="text-center p-2 bg-slate-800 rounded w-full max-w-md text-sm">{isXNext ? playerNames.x : playerNames.o}'s Turn {timeLimit > 0 && `(${timeLeft}s)`}</p>}
 
               <div className={`grid gap-2 p-4 bg-slate-900 border-4 border-purple-500 rounded-lg ${gameMode === '3x3' ? 'grid-cols-3' : 'grid-cols-4'}`}>
                 {board.map((cell, i) => (
