@@ -48,11 +48,23 @@
     const initializeFirebase = () => {
       if (firebaseInitialized) return;
       try {
-        const app = window.firebase.initializeApp(firebaseConfig);
-        database = window.firebase.database(app);
+        if (!window.firebase) {
+          console.error('Firebase library not loaded');
+          return;
+        }
+        
+        // Check if app already initialized
+        if (window.firebase.apps && window.firebase.apps.length > 0) {
+          database = window.firebase.database(window.firebase.apps[0]);
+        } else {
+          const app = window.firebase.initializeApp(firebaseConfig);
+          database = window.firebase.database(app);
+        }
+        
         firebaseInitialized = true;
+        console.log('Firebase initialized successfully');
       } catch (e) {
-        console.log("Using local storage fallback");
+        console.error("Firebase initialization error:", e);
       }
     };
 
@@ -142,32 +154,39 @@
         setGameState('waiting');
 
         if (database) {
-          const gameRef = window.firebase.database().ref(`games/${newGameId}`);
-          await gameRef.set({
-            board: Array(9).fill(null),
-            turn: 'X',
-            player_x: nameInputs.x || 'Player 1',
-            player_o: null,
-            status: 'waiting',
-            created_at: new Date().getTime(),
-          });
+          try {
+            const gameRef = window.firebase.database().ref(`games/${newGameId}`);
+            await gameRef.set({
+              board: Array(9).fill(null),
+              turn: 'X',
+              player_x: nameInputs.x || 'Player 1',
+              player_o: null,
+              status: 'waiting',
+              created_at: new Date().getTime(),
+            });
 
-          gameRef.on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-              setBoard(data.board);
-              setIsXNext(data.turn === 'X');
-              if (data.player_o) {
-                setPlayerNames({ x: data.player_x, o: data.player_o });
-                setWaitingForOpponent(false);
+            gameRef.on('value', (snapshot) => {
+              const data = snapshot.val();
+              if (data) {
+                setBoard(data.board || Array(9).fill(null));
+                setIsXNext(data.turn === 'X');
+                if (data.player_o) {
+                  setPlayerNames({ x: data.player_x, o: data.player_o });
+                  setWaitingForOpponent(false);
+                }
+                if (data.winner) {
+                  endMultiplayerGame(data.winner);
+                }
               }
-              if (data.winner) {
-                endMultiplayerGame(data.winner);
-              }
-            }
-          });
+            });
 
-          dbRef.current = gameRef;
+            dbRef.current = gameRef;
+          } catch (error) {
+            console.error('Error creating game:', error);
+            alert('Error creating game: ' + error.message);
+          }
+        } else {
+          console.error('Database not initialized');
         }
       };
 
