@@ -263,19 +263,28 @@
           return;
         }
 
-        const newBoard = [...board];
+        const newBoard = [...board].map(cell => cell || null); // Convert undefined to null
         newBoard[index] = playerSymbol;
         playSound('move');
 
         const { winner } = calculateWinner(newBoard);
+        const isFull = newBoard.every(cell => cell !== null);
 
         if (database && dbRef.current) {
           try {
-            await dbRef.current.update({
+            const updateData = {
               board: newBoard,
-              turn: playerSymbol === 'X' ? 'O' : 'X',
-              winner: winner || (newBoard.every(cell => cell !== null) ? 'Draw' : null)
-            });
+              turn: playerSymbol === 'X' ? 'O' : 'X'
+            };
+            
+            // Only set winner if game ended
+            if (winner) {
+              updateData.winner = winner;
+            } else if (isFull) {
+              updateData.winner = 'Draw';
+            }
+            
+            await dbRef.current.update(updateData);
           } catch (error) {
             console.error('Error making move:', error);
             alert('Error making move: ' + error.message);
