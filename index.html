@@ -8,8 +8,8 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     .scrollbar-hide::-webkit-scrollbar {
       display: none;
@@ -155,7 +155,7 @@
 
         if (database) {
           try {
-            const gameRef = window.firebase.database().ref(`games/${newGameId}`);
+            const gameRef = database.ref(`games/${newGameId}`);
             await gameRef.set({
               board: Array(9).fill(null),
               turn: 'X',
@@ -203,7 +203,7 @@
         }
 
         try {
-          const gameRef = window.firebase.database().ref(`games/${roomCode}`);
+          const gameRef = database.ref(`games/${roomCode}`);
           const snapshot = await gameRef.once('value');
           
           if (snapshot.exists()) {
