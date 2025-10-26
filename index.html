@@ -173,7 +173,17 @@
 
       const joinGame = async () => {
         initializeFirebase();
-        if (roomCode.length === 6 && database) {
+        if (roomCode.length !== 6) {
+          alert('Room code must be 6 characters!');
+          return;
+        }
+        
+        if (!database) {
+          alert('Firebase not connected. Please try again.');
+          return;
+        }
+
+        try {
           const gameRef = window.firebase.database().ref(`games/${roomCode}`);
           const snapshot = await gameRef.once('value');
           
@@ -183,7 +193,7 @@
               setGameId(roomCode);
               setPlayerSymbol('O');
               setPlayerNames({ x: data.player_x, o: nameInputs.o || 'Player 2' });
-              setBoard(data.board);
+              setBoard(data.board || Array(9).fill(null));
               setGameState('playing');
 
               await gameRef.update({
@@ -194,7 +204,7 @@
               gameRef.on('value', (snapshot) => {
                 const updatedData = snapshot.val();
                 if (updatedData) {
-                  setBoard(updatedData.board);
+                  setBoard(updatedData.board || Array(9).fill(null));
                   setIsXNext(updatedData.turn === 'X');
                   if (updatedData.winner) {
                     endMultiplayerGame(updatedData.winner);
@@ -204,13 +214,14 @@
 
               dbRef.current = gameRef;
             } else {
-              alert('Room is full or game already started!');
+              alert('Room is full! Game already started.');
             }
           } else {
-            alert('Room not found!');
+            alert('Room code not found. Double-check the code!');
           }
-        } else {
-          alert('Invalid room code!');
+        } catch (error) {
+          console.error('Error joining game:', error);
+          alert('Error joining game: ' + error.message);
         }
       };
 
