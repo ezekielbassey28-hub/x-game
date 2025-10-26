@@ -319,6 +319,7 @@
       };
 
       const endMultiplayerGame = (winner) => {
+        console.log('Game ended with winner:', winner);
         setGameState('ended');
         playSound('win');
         updateMultiplayerStats(winner);
@@ -351,7 +352,8 @@
         // Reset board for new game but keep players connected
         setBoard(Array(9).fill(null));
         setIsXNext(true);
-        setGameState('playing');
+        setGameState('playing'); // Make sure we go back to playing state
+        console.log('Play again clicked, setting state to playing');
 
         if (database && dbRef.current) {
           try {
