@@ -347,6 +347,25 @@
         }
       };
 
+      const playAgainSameRoom = async () => {
+        // Reset board for new game but keep players connected
+        setBoard(Array(9).fill(null));
+        setIsXNext(true);
+        setGameState('playing');
+
+        if (database && dbRef.current) {
+          try {
+            await dbRef.current.update({
+              board: Array(9).fill(''),
+              turn: 'X',
+              winner: null
+            });
+          } catch (error) {
+            console.error('Error resetting game:', error);
+          }
+        }
+      };
+
       const copyRoomCode = () => {
         navigator.clipboard.writeText(roomCode);
         alert('Room code copied to clipboard!');
@@ -467,9 +486,14 @@
                     <p className="text-3xl font-black mb-4">
                       {gameWinner ? <span className={gameWinner === 'X' ? 'text-cyan-400' : 'text-pink-400'}>{gameWinner === playerSymbol ? 'YOU WIN! 🎉' : 'YOU LOST 😢'}</span> : <span className="text-yellow-400">DRAW! 🤝</span>}
                     </p>
-                    <button onClick={resetGame} className="w-full px-6 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg">
-                      Back to Menu
-                    </button>
+                    <div className="space-y-2">
+                      <button onClick={playAgainSameRoom} className="w-full px-6 py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded-lg">
+                        ▶️ Play Again
+                      </button>
+                      <button onClick={resetGame} className="w-full px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg">
+                        🏠 Back to Menu
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
